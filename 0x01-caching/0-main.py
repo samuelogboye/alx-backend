@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """ 0-main """
-BasicCache = __import__('0-basic_cache').BasicCache
+BasicCache = __import__("0-basic_cache").BasicCache
 
 my_cache = BasicCache()
 my_cache.print_cache()
