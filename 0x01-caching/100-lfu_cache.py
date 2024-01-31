@@ -1,51 +1,78 @@
 #!/usr/bin/python3
-""" LFUCache module
-"""
-from collections import defaultdict
-
-
+""" Create LFUCache class that inherits from BaseCaching """
 BaseCaching = __import__("base_caching").BaseCaching
 
 
 class LFUCache(BaseCaching):
-    """LFUCache class"""
+    """LFUCache class that inherits from BaseCaching """
 
     def __init__(self):
-        """Initiliaze"""
+        """
+        Initializes the class with an empty queue and an empty
+        LFU (Least Frequently Used) dictionary.
+        Calls the __init__ method of the superclass.
+        """
         self.queue = []
-        self.frequency = defaultdict(
-            int
-        )  # Dictionary to store the frequency of each key
-        self.access_count = 0  # Counter to track the overall access count
-
+        self.lfu = {}
         super().__init__()
 
     def put(self, key, item):
-        """Add an item in the cache"""
-        if key is not None and item is not None:
-            if self.cache_data.get(key):
-                self.queue.remove(key)
-            self.queue.append(key)
-            self.frequency[key] += 1
-            self.access_count += 1
-            self.cache_data[key] = item
+        """
+        This function updates the cache with the given key-value pair.
 
-            if len(self.queue) > self.MAX_ITEMS:
-                lfu_key = min(
-                    self.queue,
-                    key=lambda k: (self.frequency[k],
-                                   self.access_count)
-                )
-                delete = self.queue.pop(self.queue.index(lfu_key))
+        Args:
+            key: The key to be inserted or updated in the cache.
+            item: The value associated with the key to be inserted
+            or updated in the cache.
+        """
+        if key and item:
+            if (
+                len(self.queue) >= self.MAX_ITEMS
+                and not self.cache_data.get(key)
+            ):
+                delete = self.queue.pop(0)
+                self.lfu.pop(delete)
                 self.cache_data.pop(delete)
                 print("DISCARD: {}".format(delete))
 
+            if self.cache_data.get(key):
+                self.queue.remove(key)
+                self.lfu[key] += 1
+            else:
+                self.lfu[key] = 0
+
+            insert_index = 0
+            while (
+                insert_index < len(self.queue)
+                and not self.lfu[self.queue[insert_index]]
+            ):
+                insert_index += 1
+            self.queue.insert(insert_index, key)
+            self.cache_data[key] = item
+
     def get(self, key):
-        """Get an item by key"""
-        if key is not None and key in self.cache_data:
-            # Increment the access frequency and
-            # update the overall access count
-            self.frequency[key] += 1
-            self.access_count += 1
-            return self.cache_data[key]
-        return None
+        """
+        Get the value associated with the given key from the cache.
+        If the key is not in the cache, return None.
+        This function implements the Least Frequently Used (LFU)
+        caching algorithm.
+        """
+        if key not in self.cache_data:
+            return None
+
+        self.lfu[key] += 1
+        idx = self.queue.index(key)
+        if idx + 1 < len(self.queue):
+            next_key = self.queue[idx + 1]
+            while self.lfu[key] >= self.lfu[next_key]:
+                self.queue[idx], self.queue[idx + 1] = (
+                    self.queue[idx + 1],
+                    self.queue[idx],
+                )
+                idx += 1
+                if idx + 1 < len(self.queue):
+                    next_key = self.queue[idx + 1]
+                else:
+                    break
+
+        return self.cache_data[key]
