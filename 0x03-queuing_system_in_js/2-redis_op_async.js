@@ -1,5 +1,6 @@
 // Using ES6 import to import the redis library
 import redis from 'redis';
+import { promisify } from 'util';
 
 // Create a Redis client
 const client = redis.createClient();
@@ -20,10 +21,16 @@ function setNewSchool (schoolName, value) {
 }
 
 // function to get value of key in redis
-function displaySchoolValue (schoolName) {
-  client.get(schoolName, (err, reply) => {
+const getAsync = promisify(client.get).bind(client);
+
+// Async function using ES6 async/await
+async function displaySchoolValue (schoolName) {
+  try {
+    const reply = await getAsync(schoolName);
     console.log(reply);
-  });
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 displaySchoolValue('Holberton');
